@@ -1,0 +1,8 @@
+HashCrash v0.1
+
+a small tool to test for Hash Collision vulnerabilities
+
+either use sbt to compile and run yourself, or download a prebuilt binary
+
+For more info:
+java -jar HashCrash-0.1.jar --help
