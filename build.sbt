@@ -6,5 +6,8 @@ scalaVersion := "2.9.1"
 
 libraryDependencies ++= Seq(
   "net.databinder" %% "dispatch-http" % "0.8.7",
-  "net.databinder" %% "dispatch-nio" % "0.8.7"
+  "net.databinder" %% "dispatch-nio" % "0.8.7", 
+  "org.clapper" %% "argot" % "0.3.5"
 )
+
+scalacOptions ++= Seq("-deprecation")
